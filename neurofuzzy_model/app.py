@@ -209,6 +209,104 @@ def predict_with_hybrid(model, scaler, input_data):
         base_score = 50 + (study_hours * 0.5) + (attendance * 0.3) + (engagement * 5)
         return min(max(base_score, 0), 100)
 
+def get_engagement_remarks(input_data):
+    """Generate remarks based on student engagement metrics"""
+    remarks = []
+    
+    # Engagement level remarks
+    engagement_level = input_data.get('engagement_level', 1)
+    if engagement_level == 0:
+        remarks.append("⚠️ Low engagement level detected. Consider strategies to increase student participation.")
+    elif engagement_level == 2:
+        remarks.append("✅ High engagement level observed. This is positively impacting performance.")
+    else:
+        remarks.append("🔄 Medium engagement level. There's room for improvement to boost performance.")
+    
+    raised_hands = input_data.get('raisedhands', 0)
+    discussion = input_data.get('Discussion', 0)
+    
+    if raised_hands < 30 and discussion < 30:
+        remarks.append("📉 Low class participation (raised hands and discussions). Encouraging more interaction could help.")
+    elif raised_hands >= 70 and discussion >= 70:
+        remarks.append("📈 Excellent class participation! The student is actively engaging in discussions.")
+    
+    visited_resources = input_data.get('VisITedResources', 0)
+    announcements_view = input_data.get('AnnouncementsView', 0)
+    
+    if visited_resources < 30 and announcements_view < 30:
+        remarks.append("🔍 Low resource utilization. Student may benefit from guidance on using available materials.")
+    elif visited_resources >= 70 and announcements_view >= 70:
+        remarks.append("📚 Strong resource utilization. Student is making good use of available materials.")
+    
+    return remarks
+
+def get_additional_factors_remarks(input_data):
+    """Generate remarks based on additional factors"""
+    remarks = []
+    
+    hours_studied = input_data.get('Hours_Studied', 0)
+    weekly_self_study = input_data.get('weekly_self_study_hours', 0)
+    
+    if hours_studied < 15 or weekly_self_study < 10:
+        remarks.append("⏳ Study time may be insufficient. Consider increasing study hours gradually.")
+    elif hours_studied >= 30 and weekly_self_study >= 20:
+        remarks.append("⏱️ Substantial study time invested. Ensure proper balance with rest and activities.")
+    
+    attendance = input_data.get('Attendance', 0)
+    absence_days = input_data.get('absence_days', 0)
+    
+    if attendance < 70:
+        remarks.append("🚨 Low attendance rate. Regular class attendance is crucial for better performance.")
+    elif attendance >= 90:
+        remarks.append("🏆 Excellent attendance! This consistency contributes to learning.")
+    
+    if absence_days > 10:
+        remarks.append(f"⚠️ High absence days ({absence_days}). Frequent absences may be affecting learning continuity.")
+    
+    extracurricular = input_data.get('extracurricular_activities', 0)
+    if extracurricular == 0:
+        remarks.append("🎭 No extracurricular activities reported. Balanced involvement can enhance overall development.")
+    else:
+        remarks.append("🤹 Participates in extracurricular activities. This balanced approach supports holistic growth.")
+    
+    parental_involvement = input_data.get('Parental_Involvement', 1)
+    if parental_involvement == 0:
+        remarks.append("👪 Low parental involvement. Increased support from home could benefit the student.")
+    elif parental_involvement == 2:
+        remarks.append("👪 High parental involvement. This strong support system is valuable for the student.")
+    
+    return remarks
+
+def get_prediction_remarks(prediction, input_data):
+    """Generate remarks based on prediction results"""
+    remarks = []
+    
+    if prediction >= 85:
+        remarks.append("🌟 Exceptional performance! Maintain these effective learning strategies.")
+        if input_data.get('engagement_level', 1) < 2:
+            remarks.append("💡 With even higher engagement, you might reach even greater heights!")
+    elif prediction >= 70:
+        remarks.append("👍 Solid performance. Focus on identified areas for further improvement.")
+        if input_data.get('Hours_Studied', 0) < 25:
+            remarks.append("📖 Consider increasing study hours slightly for better results.")
+    elif prediction >= 60:
+        remarks.append("🔄 Satisfactory but needs improvement. Focus on key areas like engagement and study habits.")
+        if input_data.get('Attendance', 0) < 80:
+            remarks.append("⏰ Improving attendance could help boost your performance.")
+    else:
+        remarks.append("🚧 Performance needs significant improvement. Focus on foundational areas first.")
+        if input_data.get('Motivation_Level', 1) == 0:
+            remarks.append("💪 Addressing motivation could be the first step to improvement.")
+    
+    # Specific suggestions based on input data
+    if input_data.get('Access_to_Resources', 1) == 0:
+        remarks.append("💻 Limited access to resources may be hindering performance. Explore available support options.")
+    
+    if input_data.get('Motivation_Level', 1) == 0:
+        remarks.append("🔋 Low motivation detected. Identifying personal learning goals might help.")
+    
+    return remarks
+
 def main():
     st.set_page_config(page_title="Student Performance Predictor", layout="wide")
     
@@ -295,6 +393,21 @@ def main():
                 color = "red"
             
             st.markdown(f"<h3 style='color: {color}'>Performance Level: {performance_level}</h3>", unsafe_allow_html=True)
+            
+            with st.expander("Engagement Analysis"):
+                engagement_remarks = get_engagement_remarks(input_data)
+                for remark in engagement_remarks:
+                    st.write(f"- {remark}")
+            
+            with st.expander("Additional Factors Analysis"):
+                additional_remarks = get_additional_factors_remarks(input_data)
+                for remark in additional_remarks:
+                    st.write(f"- {remark}")
+            
+            with st.expander("Performance Recommendations"):
+                prediction_remarks = get_prediction_remarks(prediction, input_data)
+                for remark in prediction_remarks:
+                    st.write(f"- {remark}")
 
 if __name__ == "__main__":
     main()
